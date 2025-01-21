@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    optimizePackageImports: ['@radix-ui'],
+    optimizePackageImports: ['@radix-ui']
   }
 }
 
