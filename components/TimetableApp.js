@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Carousel,
   CarouselContent,
@@ -10,7 +11,6 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
-
 
 const timeSlots = Array.from({ length: 9 }, (_, i) => `${String(i + 9).padStart(2, '0')}:15`);
 
@@ -24,7 +24,8 @@ const timetableData = {
             "moduleCode": "COMP-0661-WD_KCRCO_B",
             "type": "Lecture",
             "lecturer": "Power, Clodagh",
-            "room": "FTG15"
+            "room": "FTG15",
+            "status": "cancelled"
         },
         {
             "startTime": "10:15",
@@ -109,7 +110,8 @@ const timetableData = {
             "moduleCode": "COMP-0661-WD_KCRCO_B",
             "type": "Lecture",
             "lecturer": "Power, Clodagh",
-            "room": "FTG14"
+            "room": "FTG14",
+            "status": "cancelled"
         },
         {
             "startTime": "12:15",
@@ -129,7 +131,8 @@ const timetableData = {
             "moduleCode": "COMP-0966-WD_KCRCO_B",
             "type": "Practical",
             "lecturer": "White, Lucy",
-            "room": "D04"
+            "room": "D04",
+            "status": "cancelled"
         },
         {
             "startTime": "13:15",
@@ -138,7 +141,8 @@ const timetableData = {
             "moduleCode": "DESG-0056-WD_KMULA_D",
             "type": "Practical",
             "lecturer": "O Riordan, Sinead",
-            "room": "IT101"
+            "room": "IT101",
+            "status": "cancelled"
         }
     ],
     "Friday": [
@@ -149,7 +153,9 @@ const timetableData = {
             "moduleCode": "COMP-0103-WD_KCRCO_B",
             "type": "Practical",
             "lecturer": "O Neill, Sinead M",
-            "room": "IT201"
+            "room": "IT201",
+            "status": "cancelled"
+            
         },
         {
             "startTime": "14:15",
@@ -158,13 +164,16 @@ const timetableData = {
             "moduleCode": "COMP-0661-WD_KCRCO_B",
             "type": "Practical",
             "lecturer": "Power, Clodagh",
-            "room": "IT220"
+            "room": "IT220",
+            "status": "cancelled"
         }
     ]
 };
 const TimeTableClass = ({ session }) => {
+  const isCancelled = session.status === 'cancelled';
+
   return (
-    <Card className="h-full shadow-sm">
+    <Card className={`h-full shadow-sm ${isCancelled ? 'bg-red-50' : ''}`}>
       <CardContent className="p-3 h-full">
         <div className="flex flex-col h-full justify-between">
           <div className="space-y-1.5">
@@ -172,19 +181,28 @@ const TimeTableClass = ({ session }) => {
               <span className="text-sm text-gray-600">
                 {session.startTime} - {session.endTime}
               </span>
-              <span className={`px-2 py-0.5 rounded-full text-xs ${
-                session.type === 'Practical' 
-                  ? 'bg-blue-50 text-blue-700' 
-                  : 'bg-purple-50 text-purple-700'
-              }`}>
-                {session.type}
-              </span>
+              <div className="flex gap-2 items-center">
+                {isCancelled && (
+                  <span className="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700">
+                    Cancelled
+                  </span>
+                )}
+                <span className={`px-2 py-0.5 rounded-full text-xs ${
+                  session.type === 'Practical' 
+                    ? 'bg-blue-50 text-blue-700' 
+                    : 'bg-purple-50 text-purple-700'
+                }`}>
+                  {session.type}
+                </span>
+              </div>
             </div>
             
-            <h3 className="text-base font-semibold">{session.module}</h3>
+            <h3 className={`text-base font-semibold ${isCancelled ? 'line-through text-gray-500' : ''}`}>
+              {session.module}
+            </h3>
           </div>
           
-          <div className="flex flex-col space-y-1 text-sm text-gray-600">
+          <div className={`flex flex-col space-y-1 text-sm ${isCancelled ? 'text-gray-400' : 'text-gray-600'}`}>
             <div className="flex items-center">
               <span>Lecturer:</span>
               <span className="ml-1">{session.lecturer}</span>
@@ -249,27 +267,51 @@ const TimetableApp = () => {
   const days = Object.keys(timetableData);
   const [selectedDay, setSelectedDay] = useState('Monday');
   const [api, setApi] = useState();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
+  // Initialize with URL param day or today's day
+  useEffect(() => {
+    const urlDay = searchParams.get('day');
+    const today = new Date().toLocaleString('en-us', {weekday: 'long'});
+    
+    if (urlDay && days.includes(urlDay)) {
+      setSelectedDay(urlDay);
+      if (api) {
+        api.scrollTo(days.indexOf(urlDay));
+      }
+    } else if (days.includes(today)) {
+      setSelectedDay(today);
+      if (api) {
+        api.scrollTo(days.indexOf(today));
+      }
+      // Update URL with today's day
+      router.push(`?day=${today}`);
+    }
+  }, [api, searchParams]);
+
+  // Handle carousel selection changes
   useEffect(() => {
     if (!api) return;
 
     api.on('select', () => {
       const currentIndex = api.selectedScrollSnap();
-      setSelectedDay(days[currentIndex]);
+      const newDay = days[currentIndex];
+      setSelectedDay(newDay);
+      router.push(`?day=${newDay}`);
     });
-  }, [api, days]);
 
-  useEffect(() => {
-    const today = new Date().toLocaleString('en-us', {weekday: 'long'});
-    if (days.includes(today)) {
-      const todayIndex = days.indexOf(today);
-      setSelectedDay(today);
-      // Only scroll if we have the API
-      if (api) {
-        api.scrollTo(todayIndex);
-      }
-    }
-  }, [api, days]);
+    return () => {
+      api.off('select');
+    };
+  }, [api, days, router]);
+
+  const handleDayClick = (day) => {
+    const index = days.indexOf(day);
+    setSelectedDay(day);
+    api?.scrollTo(index);
+    router.push(`?day=${day}`);
+  };
 
   return (
     <div className="w-full mx-auto p-4">
@@ -282,7 +324,7 @@ const TimetableApp = () => {
             <rect x="14" y="14" width="8" height="8" fill="currentColor" opacity="0.2"/>
             <rect x="24" y="24" width="8" height="8" fill="currentColor" opacity="0.2"/>
           </svg>
-          <span className="text-2xl font-bold">CC & MAD TT</span>
+          <span className="text-2xl font-bold">MTU Schedule</span>
         </div>
         <div className="flex gap-2 hidden sm:flex">
           {days.map((day) => (
@@ -290,11 +332,7 @@ const TimetableApp = () => {
               key={day}
               variant={day === selectedDay ? "default" : "ghost"}
               className="relative"
-              onClick={() => {
-                const index = days.indexOf(day);
-                api?.scrollTo(index);
-                setSelectedDay(day);
-              }}
+              onClick={() => handleDayClick(day)}
             >
               {day}
               {day === selectedDay && (
