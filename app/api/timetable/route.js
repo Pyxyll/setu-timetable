@@ -1,14 +1,27 @@
 import { NextResponse } from 'next/server'
-import fs from 'fs/promises'
-import path from 'path'
+import { put } from '@vercel/blob'
+import { defaultTimetableData } from '@/data/timetable'
 
-const DATA_FILE_PATH = path.join(process.cwd(), 'data', 'timetable.json')
+const BLOB_PATH = 'timetable/data.json'
 
 // GET endpoint to fetch timetable data
 export async function GET() {
   try {
-    const data = await fs.readFile(DATA_FILE_PATH, 'utf8')
-    return NextResponse.json(JSON.parse(data))
+    const response = await fetch(process.env.BLOB_URL || '')
+    
+    if (!response.ok) {
+      // If no blob exists or can't be fetched, create one with default data
+      const json = JSON.stringify(defaultTimetableData)
+      const { url } = await put(BLOB_PATH, json, { 
+        access: 'public',
+        contentType: 'application/json'
+      })
+      process.env.BLOB_URL = url
+      return NextResponse.json(defaultTimetableData)
+    }
+
+    const data = await response.json()
+    return NextResponse.json(data)
   } catch (error) {
     console.error('Error reading timetable data:', error)
     return NextResponse.json(
@@ -22,7 +35,17 @@ export async function GET() {
 export async function PUT(request) {
   try {
     const data = await request.json()
-    await fs.writeFile(DATA_FILE_PATH, JSON.stringify(data, null, 2))
+    const json = JSON.stringify(data)
+    
+    // Create new blob with updated data
+    const { url } = await put(BLOB_PATH, json, {
+      access: 'public',
+      contentType: 'application/json'
+    })
+    
+    // Update the URL for future GET requests
+    process.env.BLOB_URL = url
+    
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error updating timetable data:', error)
