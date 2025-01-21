@@ -10,12 +10,164 @@ import {
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from '@/components/theme-toggle'
-import { useTimetableData } from '@/hooks/useTimetableData';
-import { Loader2 } from 'lucide-react';
-
 
 const timeSlots = Array.from({ length: 9 }, (_, i) => `${String(i + 9).padStart(2, '0')}:15`);
 
+
+const timetableData = {
+    "Monday": [
+        {
+            "startTime": "09:15",
+            "endTime": "10:15",
+            "module": "NoSQL Database",
+            "moduleCode": "COMP-0661-WD_KCRCO_B",
+            "type": "Lecture",
+            "lecturer": "Power, Clodagh",
+            "room": "FTG15",
+            "status": "cancelled"
+        },
+        {
+            "startTime": "10:15",
+            "endTime": "11:15",
+            "module": "Software Engineering",
+            "moduleCode": "COMP-0103-WD_KCRCO_B",
+            "type": "Lecture",
+            "lecturer": "O Neill, Sinead M",
+            "room": "TL251"
+        },
+        {
+            "startTime": "13:15",
+            "endTime": "15:15",
+            "module": "Multimedia Networks",
+            "moduleCode": "COMP-0966-WD_KCRCO_B",
+            "type": "Lecture",
+            "lecturer": "White, Lucy",
+            "room": "TL251"
+        },
+        {
+            "startTime": "15:15",
+            "endTime": "16:15",
+            "module": "Software Engineering",
+            "moduleCode": "COMP-0103-WD_KCRCO_B",
+            "type": "Lecture",
+            "lecturer": "O Neill, Sinead M",
+            "room": "TL251"
+        },
+        {
+            "startTime": "16:15",
+            "endTime": "17:15",
+            "module": "3D Animation",
+            "moduleCode": "COMP-0965-WD_KCRCO_B",
+            "type": "Slack Class",
+            "lecturer": "Mc Inerney, Patrick T",
+            "room": "Elsewhere"
+        }
+    ],
+    "Tuesday": [
+        {
+            "startTime": "09:15",
+            "endTime": "11:15",
+            "module": "Web App Development",
+            "moduleCode": "COMP-0597-WD_KCRCO_B",
+            "type": "Practical",
+            "lecturer": "Birney, Rosanne",
+            "room": "ITG19"
+        },
+        {
+            "startTime": "11:15",
+            "endTime": "13:15",
+            "module": "Digital Graphics",
+            "moduleCode": "DESG-0056-WD_KMULA_D",
+            "type": "Practical",
+            "lecturer": "O Riordan, Sinead",
+            "room": "IT101"
+        },
+        {
+            "startTime": "14:15",
+            "endTime": "17:15",
+            "module": "3D Animation",
+            "moduleCode": "COMP-0965-WD_KCRCO_B",
+            "type": "Practical",
+            "lecturer": "Mc Inerney, Patrick T",
+            "room": "IT102"
+        }
+    ],
+    "Wednesday": [
+        {
+            "startTime": "09:15",
+            "endTime": "11:15",
+            "module": "Web App Development",
+            "moduleCode": "COMP-0597-WD_KCRCO_B",
+            "type": "Lecture",
+            "lecturer": "Birney, Rosanne",
+            "room": "E19A"
+        },
+        {
+            "startTime": "11:15",
+            "endTime": "12:15",
+            "module": "NoSQL Database",
+            "moduleCode": "COMP-0661-WD_KCRCO_B",
+            "type": "Lecture",
+            "lecturer": "Power, Clodagh",
+            "room": "FTG14",
+            "status": "cancelled"
+        },
+        {
+            "startTime": "12:15",
+            "endTime": "13:15",
+            "module": "Multimedia Networks",
+            "moduleCode": "COMP-0966-WD_KCRCO_B",
+            "type": "Lecture",
+            "lecturer": "White, Lucy",
+            "room": "FTG23"
+        }
+    ],
+    "Thursday": [
+        {
+            "startTime": "11:15",
+            "endTime": "13:15",
+            "module": "Multimedia Networks",
+            "moduleCode": "COMP-0966-WD_KCRCO_B",
+            "type": "Practical",
+            "lecturer": "White, Lucy",
+            "room": "D04",
+            "status": "cancelled"
+        },
+        {
+            "startTime": "13:15",
+            "endTime": "15:15",
+            "module": "Digital Graphics",
+            "moduleCode": "DESG-0056-WD_KMULA_D",
+            "type": "Practical",
+            "lecturer": "O Riordan, Sinead",
+            "room": "IT101",
+            "status": "cancelled"
+        }
+    ],
+    "Friday": [
+        {
+            "startTime": "11:15",
+            "endTime": "13:15",
+            "module": "Software Engineering",
+            "moduleCode": "COMP-0103-WD_KCRCO_B",
+            "type": "Practical",
+            "lecturer": "O Neill, Sinead M",
+            "room": "IT201",
+            "status": "cancelled"
+            
+        },
+        {
+            "startTime": "14:15",
+            "endTime": "16:15",
+            "module": "NoSQL Database",
+            "moduleCode": "COMP-0661-WD_KCRCO_B",
+            "type": "Practical",
+            "lecturer": "Power, Clodagh",
+            "room": "IT220",
+            "status": "cancelled"
+        }
+    ]
+};
 const TimeTableClass = ({ session }) => {
   const isCancelled = session.status === 'cancelled';
 
@@ -90,52 +242,89 @@ const calculateDuration = (startTime, endTime) => {
   return endHour - startHour;
 };
 
+const DayView = ({ day, isActive }) => {
+  return (
+    <div className={`w-full ${!isActive ? 'pointer-events-none' : ''}`}>
+      <div className="grid grid-cols-[80px_1fr] gap-4">
+        <div className="space-y-24 pr-4">
+          {timeSlots.map((time) => (
+            <div key={time} className="text-sm text-gray-500">{time}</div>
+          ))}
+        </div>
+
+        <div className="relative h-[1080px]">
+          {timetableData[day].map((session, index) => {
+            const startRow = getGridRow(session.startTime);
+            const duration = calculateDuration(session.startTime, session.endTime);
+            
+            return (
+              <div
+                key={index}
+                className="absolute w-full px-2"
+                style={{
+                  top: `${(startRow - 1) * 120}px`,
+                  height: `${duration * 120}px`
+                }}
+              >
+                <TimeTableClass session={session} />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const TimetableApp = () => {
-  const { timetableData, isLoading } = useTimetableData();
+  const days = Object.keys(timetableData);
   const [selectedDay, setSelectedDay] = useState('Monday');
   const [api, setApi] = useState();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const days = timetableData ? Object.keys(timetableData) : [];
 
-  // Setup carousel effect handlers
+  // Initialize with URL param day or today's day
   useEffect(() => {
-    if (!api || !days.length) return;
-
-    api.on('select', () => {
-      const currentIndex = api.selectedScrollSnap();
-      setSelectedDay(days[currentIndex]);
-    });
-
-    return () => {
-      api.off('select');
-    };
-  }, [api, days]);
-
-  // Handle URL params and initial day selection
-  useEffect(() => {
-    if (!days.length || !api) return;
-
     const urlDay = searchParams.get('day');
     const today = new Date().toLocaleString('en-us', {weekday: 'long'});
     
     if (urlDay && days.includes(urlDay)) {
       setSelectedDay(urlDay);
-      api.scrollTo(days.indexOf(urlDay));
+      if (api) {
+        api.scrollTo(days.indexOf(urlDay));
+      }
     } else if (days.includes(today)) {
       setSelectedDay(today);
-      api.scrollTo(days.indexOf(today));
+      if (api) {
+        api.scrollTo(days.indexOf(today));
+      }
+      // Update URL with today's day
       router.push(`?day=${today}`);
     }
-  }, [api, searchParams, days, router]);
+  }, [api, searchParams]);
 
-  if (isLoading || !timetableData) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
+  // Handle carousel selection changes
+  useEffect(() => {
+    if (!api) return;
+
+    api.on('select', () => {
+      const currentIndex = api.selectedScrollSnap();
+      const newDay = days[currentIndex];
+      setSelectedDay(newDay);
+      router.push(`?day=${newDay}`);
+    });
+
+    return () => {
+      api.off('select');
+    };
+  }, [api, days, router]);
+
+  const handleDayClick = (day) => {
+    const index = days.indexOf(day);
+    setSelectedDay(day);
+    api?.scrollTo(index);
+    router.push(`?day=${day}`);
+  };
 
   return (
     <div className="w-full mx-auto p-4">
@@ -153,16 +342,11 @@ const TimetableApp = () => {
         </div>
         <div className="flex gap-2 hidden sm:flex">
           {days.map((day) => (
-            <Button 
+            <Button
               key={day}
               variant={day === selectedDay ? "default" : "ghost"}
               className="relative"
-              onClick={() => {
-                const index = days.indexOf(day);
-                api?.scrollTo(index);
-                setSelectedDay(day);
-                router.push(`?day=${day}`);
-              }}
+              onClick={() => handleDayClick(day)}
             >
               {day}
               {day === selectedDay && (
@@ -190,33 +374,7 @@ const TimetableApp = () => {
         <CarouselContent>
           {days.map((day) => (
             <CarouselItem key={day}>
-              <div className="grid grid-cols-[80px_1fr] gap-4">
-                <div className="space-y-24 pr-4">
-                  {timeSlots.map((time) => (
-                    <div key={time} className="text-sm text-gray-500">{time}</div>
-                  ))}
-                </div>
-
-                <div className="relative h-[1080px]">
-                  {timetableData[day].map((session, index) => {
-                    const startRow = getGridRow(session.startTime);
-                    const duration = calculateDuration(session.startTime, session.endTime);
-                    
-                    return (
-                      <div
-                        key={index}
-                        className="absolute w-full px-2"
-                        style={{
-                          top: `${(startRow - 1) * 120}px`,
-                          height: `${duration * 120}px`
-                        }}
-                      >
-                        <TimeTableClass session={session} />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              <DayView day={day} isActive={day === selectedDay} />
             </CarouselItem>
           ))}
         </CarouselContent>
