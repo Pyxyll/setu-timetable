@@ -7,10 +7,9 @@ import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from '@/components/theme-toggle'
 
 const timeSlots = Array.from({ length: 9 }, (_, i) => `${String(i + 9).padStart(2, '0')}:15`);
 
@@ -59,9 +58,9 @@ const timetableData = {
             "endTime": "17:15",
             "module": "3D Animation",
             "moduleCode": "COMP-0965-WD_KCRCO_B",
-            "type": "Lecture",
+            "type": "Slack Class",
             "lecturer": "Mc Inerney, Patrick T",
-            "room": "F28"
+            "room": "Elsewhere"
         }
     ],
     "Tuesday": [
@@ -173,36 +172,50 @@ const TimeTableClass = ({ session }) => {
   const isCancelled = session.status === 'cancelled';
 
   return (
-    <Card className={`h-full shadow-sm ${isCancelled ? 'bg-red-50' : ''}`}>
+    <Card className={`h-full shadow-sm transition-colors duration-300 ${
+      isCancelled 
+        ? 'bg-red-50 dark:bg-red-950' 
+        : 'bg-white dark:bg-gray-800'
+    }`}>
       <CardContent className="p-3 h-full">
         <div className="flex flex-col h-full justify-between">
           <div className="space-y-1.5">
             <div className="flex justify-between items-start">
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-gray-600 dark:text-gray-300 transition-colors duration-300">
                 {session.startTime} - {session.endTime}
               </span>
               <div className="flex gap-2 items-center">
                 {isCancelled && (
-                  <span className="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700">
+                  <span className="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 transition-colors duration-300">
                     Cancelled
                   </span>
                 )}
-                <span className={`px-2 py-0.5 rounded-full text-xs ${
+                <span className={`px-2 py-0.5 rounded-full text-xs transition-colors duration-300 ${
                   session.type === 'Practical' 
-                    ? 'bg-blue-50 text-blue-700' 
-                    : 'bg-purple-50 text-purple-700'
+                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                    : session.type === 'Slack Class'
+                    ? 'bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-300'
+                    : 'bg-purple-50 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
                 }`}>
                   {session.type}
                 </span>
               </div>
             </div>
             
-            <h3 className={`text-base font-semibold ${isCancelled ? 'line-through text-gray-500' : ''}`}>
+            <h3 className={`text-base font-semibold transition-colors duration-300 ${
+              isCancelled 
+                ? 'line-through text-gray-500 dark:text-gray-400' 
+                : 'text-gray-900 dark:text-gray-50'
+            }`}>
               {session.module}
             </h3>
           </div>
           
-          <div className={`flex flex-col space-y-1 text-sm ${isCancelled ? 'text-gray-400' : 'text-gray-600'}`}>
+          <div className={`flex flex-col space-y-1 text-sm transition-colors duration-300 ${
+            isCancelled 
+              ? 'text-gray-400 dark:text-gray-500' 
+              : 'text-gray-600 dark:text-gray-300'
+          }`}>
             <div className="flex items-center">
               <span>Lecturer:</span>
               <span className="ml-1">{session.lecturer}</span>
@@ -325,6 +338,7 @@ const TimetableApp = () => {
             <rect x="24" y="24" width="8" height="8" fill="currentColor" opacity="0.2"/>
           </svg>
           <span className="text-2xl font-bold">MTU Schedule</span>
+          <ThemeToggle />
         </div>
         <div className="flex gap-2 hidden sm:flex">
           {days.map((day) => (
