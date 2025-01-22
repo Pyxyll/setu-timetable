@@ -14,12 +14,6 @@
     "@radix-ui/react-slot": "^1.1.1",
     "@radix-ui/react-switch": "^1.1.2",
     "@radix-ui/react-tabs": "^1.1.2",
-<<<<<<< HEAD
-    "@radix-ui/react-toast": "^1.2.4",
-    "@vercel/blob": "^0.27.1",
-    "@vercel/kv": "^3.0.0",
-=======
->>>>>>> parent of f32c141 (added dashboard to edit class status)
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "embla-carousel-react": "^8.5.2",
