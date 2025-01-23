@@ -168,6 +168,51 @@ const timetableData = {
         }
     ]
 };
+
+const getGridRow = (time) => {
+  const hour = parseInt(time.split(':')[0]);
+  return hour - 8;
+};
+
+const calculateDuration = (startTime, endTime) => {
+  const [startHour] = startTime.split(':').map(Number);
+  const [endHour] = endTime.split(':').map(Number);
+  return endHour - startHour;
+};
+
+const CurrentTimeLine = ({ day }) => {
+  const [position, setPosition] = useState(0);
+  const [shouldShow, setShouldShow] = useState(false);
+
+  useEffect(() => {
+    const updatePosition = () => {
+      // Check if this is today
+      const today = new Date().toLocaleString('en-us', {weekday: 'long'});
+      const isToday = today === day;
+      setShouldShow(isToday);
+
+      const hours = 11;
+      const minutes = 30;
+      const currentTime = (hours - 9) * 120 + (minutes / 60) * 120;
+      setPosition(currentTime);
+    };
+
+    updatePosition();
+  }, [day]);
+
+  if (!shouldShow || position < 0) return null;
+
+  return (
+    <div 
+      className="absolute left-0 right-0 h-0.5 bg-red-500 z-50"
+      style={{
+        top: `${position}px`,
+      }}
+    >
+      <div className="absolute -left-1 -top-1.5 w-4 h-4 rounded-full bg-red-500" />
+    </div>
+  );
+};
 const TimeTableClass = ({ session }) => {
   const isCancelled = session.status === 'cancelled';
 
@@ -231,16 +276,6 @@ const TimeTableClass = ({ session }) => {
   );
 };
 
-const getGridRow = (time) => {
-  const hour = parseInt(time.split(':')[0]);
-  return hour - 8;
-};
-
-const calculateDuration = (startTime, endTime) => {
-  const [startHour] = startTime.split(':').map(Number);
-  const [endHour] = endTime.split(':').map(Number);
-  return endHour - startHour;
-};
 
 const DayView = ({ day, isActive }) => {
   return (
@@ -253,7 +288,8 @@ const DayView = ({ day, isActive }) => {
         </div>
 
         <div className="relative h-[1080px]">
-          {timetableData[day].map((session, index) => {
+        <CurrentTimeLine day={day} />
+        {timetableData[day].map((session, index) => {
             const startRow = getGridRow(session.startTime);
             const duration = calculateDuration(session.startTime, session.endTime);
             
@@ -275,6 +311,7 @@ const DayView = ({ day, isActive }) => {
     </div>
   );
 };
+
 
 const TimetableApp = () => {
   const days = Object.keys(timetableData);
@@ -337,7 +374,7 @@ const TimetableApp = () => {
             <rect x="14" y="14" width="8" height="8" fill="currentColor" opacity="0.2"/>
             <rect x="24" y="24" width="8" height="8" fill="currentColor" opacity="0.2"/>
           </svg>
-          <span className="text-2xl font-bold">MTU Schedule</span>
+          <span className="text-2xl font-bold">CC & MAD Timetable</span>
           <ThemeToggle />
         </div>
         <div className="flex gap-2 hidden sm:flex">
