@@ -1,6 +1,7 @@
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from '@/components/theme-provider'
+import { TimetableProvider } from '@/contexts/TimetableContext'
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -13,7 +14,9 @@ export default function RootLayout({ children }) {
           defaultTheme="system"
           enableSystem
         >
-          {children}
+          <TimetableProvider>
+            {children}
+          </TimetableProvider>
         </ThemeProvider>
       </body>
     </html>

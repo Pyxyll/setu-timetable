@@ -10,164 +10,10 @@ import {
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from '@/components/theme-toggle'
+import { useTimetable } from '@/contexts/TimetableContext';
+
 
 const timeSlots = Array.from({ length: 9 }, (_, i) => `${String(i + 9).padStart(2, '0')}:15`);
-
-
-const timetableData = {
-    "Monday": [
-        {
-            "startTime": "09:15",
-            "endTime": "10:15",
-            "module": "NoSQL Database",
-            "moduleCode": "COMP-0661-WD_KCRCO_B",
-            "type": "Lecture",
-            "lecturer": "Power, Clodagh",
-            "room": "FTG15",
-            "status": "cancelled"
-        },
-        {
-            "startTime": "10:15",
-            "endTime": "11:15",
-            "module": "Software Engineering",
-            "moduleCode": "COMP-0103-WD_KCRCO_B",
-            "type": "Lecture",
-            "lecturer": "O Neill, Sinead M",
-            "room": "TL251"
-        },
-        {
-            "startTime": "13:15",
-            "endTime": "15:15",
-            "module": "Multimedia Networks",
-            "moduleCode": "COMP-0966-WD_KCRCO_B",
-            "type": "Lecture",
-            "lecturer": "White, Lucy",
-            "room": "TL251"
-        },
-        {
-            "startTime": "15:15",
-            "endTime": "16:15",
-            "module": "Software Engineering",
-            "moduleCode": "COMP-0103-WD_KCRCO_B",
-            "type": "Lecture",
-            "lecturer": "O Neill, Sinead M",
-            "room": "TL251"
-        },
-        {
-            "startTime": "16:15",
-            "endTime": "17:15",
-            "module": "3D Animation",
-            "moduleCode": "COMP-0965-WD_KCRCO_B",
-            "type": "Slack Class",
-            "lecturer": "Mc Inerney, Patrick T",
-            "room": "Elsewhere"
-        }
-    ],
-    "Tuesday": [
-        {
-            "startTime": "09:15",
-            "endTime": "11:15",
-            "module": "Web App Development",
-            "moduleCode": "COMP-0597-WD_KCRCO_B",
-            "type": "Practical",
-            "lecturer": "Birney, Rosanne",
-            "room": "ITG19"
-        },
-        {
-            "startTime": "11:15",
-            "endTime": "13:15",
-            "module": "Digital Graphics",
-            "moduleCode": "DESG-0056-WD_KMULA_D",
-            "type": "Practical",
-            "lecturer": "O Riordan, Sinead",
-            "room": "IT101"
-        },
-        {
-            "startTime": "14:15",
-            "endTime": "17:15",
-            "module": "3D Animation",
-            "moduleCode": "COMP-0965-WD_KCRCO_B",
-            "type": "Practical",
-            "lecturer": "Mc Inerney, Patrick T",
-            "room": "IT102"
-        }
-    ],
-    "Wednesday": [
-        {
-            "startTime": "09:15",
-            "endTime": "11:15",
-            "module": "Web App Development",
-            "moduleCode": "COMP-0597-WD_KCRCO_B",
-            "type": "Lecture",
-            "lecturer": "Birney, Rosanne",
-            "room": "E19A"
-        },
-        {
-            "startTime": "11:15",
-            "endTime": "12:15",
-            "module": "NoSQL Database",
-            "moduleCode": "COMP-0661-WD_KCRCO_B",
-            "type": "Lecture",
-            "lecturer": "Power, Clodagh",
-            "room": "FTG14",
-            "status": "cancelled"
-        },
-        {
-            "startTime": "12:15",
-            "endTime": "13:15",
-            "module": "Multimedia Networks",
-            "moduleCode": "COMP-0966-WD_KCRCO_B",
-            "type": "Lecture",
-            "lecturer": "White, Lucy",
-            "room": "FTG23"
-        }
-    ],
-    "Thursday": [
-        {
-            "startTime": "11:15",
-            "endTime": "13:15",
-            "module": "Multimedia Networks",
-            "moduleCode": "COMP-0966-WD_KCRCO_B",
-            "type": "Practical",
-            "lecturer": "White, Lucy",
-            "room": "D04",
-            "status": "cancelled"
-        },
-        {
-            "startTime": "13:15",
-            "endTime": "15:15",
-            "module": "Digital Graphics",
-            "moduleCode": "DESG-0056-WD_KMULA_D",
-            "type": "Practical",
-            "lecturer": "O Riordan, Sinead",
-            "room": "IT101",
-            "status": "cancelled"
-        }
-    ],
-    "Friday": [
-        {
-            "startTime": "11:15",
-            "endTime": "13:15",
-            "module": "Software Engineering",
-            "moduleCode": "COMP-0103-WD_KCRCO_B",
-            "type": "Practical",
-            "lecturer": "O Neill, Sinead M",
-            "room": "IT201",
-            "status": "cancelled"
-            
-        },
-        {
-            "startTime": "14:15",
-            "endTime": "16:15",
-            "module": "NoSQL Database",
-            "moduleCode": "COMP-0661-WD_KCRCO_B",
-            "type": "Practical",
-            "lecturer": "Power, Clodagh",
-            "room": "IT220",
-            "status": "cancelled"
-        }
-    ]
-};
 
 const getGridRow = (time) => {
   const hour = parseInt(time.split(':')[0]);
@@ -191,13 +37,26 @@ const CurrentTimeLine = ({ day }) => {
       const isToday = today === day;
       setShouldShow(isToday);
 
-      const hours = 11;
-      const minutes = 30;
+      // Get current time
+      const now = new Date();
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+
+      // Only show during timetable hours (9:15 - 17:15)
+      if (hours < 9 || (hours === 9 && minutes < 15) || hours >= 17) {
+        setShouldShow(false);
+        return;
+      }
+
       const currentTime = (hours - 9) * 120 + (minutes / 60) * 120;
       setPosition(currentTime);
     };
 
     updatePosition();
+    // Update every minute
+    const interval = setInterval(updatePosition, 60000);
+
+    return () => clearInterval(interval);
   }, [day]);
 
   if (!shouldShow || position < 0) return null;
@@ -278,6 +137,7 @@ const TimeTableClass = ({ session }) => {
 
 
 const DayView = ({ day, isActive }) => {
+  const { timetableData } = useTimetable();
   return (
     <div className={`w-full ${!isActive ? 'pointer-events-none' : ''}`}>
       <div className="grid grid-cols-[80px_1fr] gap-4">
@@ -314,6 +174,7 @@ const DayView = ({ day, isActive }) => {
 
 
 const TimetableApp = () => {
+  const { timetableData } = useTimetable();
   const days = Object.keys(timetableData);
   const [selectedDay, setSelectedDay] = useState('Monday');
   const [api, setApi] = useState();
