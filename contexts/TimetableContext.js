@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 
 // Import your timetable data
 const initialTimetableData = {
@@ -172,33 +172,75 @@ const initialTimetableData = {
     ]
   };
 
-const TimetableContext = createContext();
+  const TimetableContext = createContext();
 
-export function TimetableProvider({ children }) {
-    const [timetableData, setTimetableData] = useState(initialTimetableData);
-
-    const updateClassStatus = (day, classId, newStatus) => {
-        setTimetableData(prev => ({
-            ...prev,
-            [day]: prev[day].map(cls => 
-                cls.id === classId 
-                    ? { ...cls, status: newStatus }
-                    : cls
-            )
-        }));
-    };
-
-    return (
-        <TimetableContext.Provider value={{ timetableData, updateClassStatus }}>
-            {children}
-        </TimetableContext.Provider>
-    );
-}
-
-export function useTimetable() {
-    const context = useContext(TimetableContext);
-    if (!context) {
-        throw new Error('useTimetable must be used within a TimetableProvider');
-    }
-    return context;
-}
+  export function TimetableProvider({ children }) {
+      const [timetableData, setTimetableData] = useState(initialTimetableData);
+      const [isLoading, setIsLoading] = useState(true);
+  
+      // Load initial data
+      useEffect(() => {
+          const loadData = async () => {
+              try {
+                  const response = await fetch('/api/timetable');
+                  if (response.ok) {
+                      const data = await response.json();
+                      setTimetableData(data);
+                  }
+              } catch (error) {
+                  console.error('Failed to load timetable data:', error);
+              } finally {
+                  setIsLoading(false);
+              }
+          };
+  
+          loadData();
+      }, []);
+  
+      const updateClassStatus = async (day, classId, newStatus) => {
+          // Update local state
+          const newData = {
+              ...timetableData,
+              [day]: timetableData[day].map(cls => 
+                  cls.id === classId 
+                      ? { ...cls, status: newStatus }
+                      : cls
+              )
+          };
+          
+          setTimetableData(newData);
+  
+          // Persist to Vercel Blob
+          try {
+              await fetch('/api/timetable', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(newData)
+              });
+          } catch (error) {
+              console.error('Failed to save timetable data:', error);
+              // Optionally revert the local state if save fails
+              setTimetableData(timetableData);
+          }
+      };
+  
+      if (isLoading) {
+          return <div>Loading timetable...</div>;
+      }
+  
+      return (
+          <TimetableContext.Provider value={{ timetableData, updateClassStatus }}>
+              {children}
+          </TimetableContext.Provider>
+      );
+  }
+  
+  export function useTimetable() {
+      const context = useContext(TimetableContext);
+      if (!context) {
+          throw new Error('useTimetable must be used within a TimetableProvider');
+      }
+      return context;
+  }
