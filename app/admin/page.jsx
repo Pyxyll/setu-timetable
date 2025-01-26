@@ -144,10 +144,11 @@ const AdminPanel = () => {
     saveChanges,
     hasUnsavedChanges 
   } = useTimetable();
-  const [open, setOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingClass, setEditingClass] = useState(null); // Store the class being edited
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+
   const handleAddClass = (day, classData) => {
     const id = `${day}_${classData.startTime.replace(':', '')}_${classData.module.replace(/\s+/g, '')}`;
     addClass(day, { ...classData, id });
@@ -185,7 +186,7 @@ const AdminPanel = () => {
 
   const FloatingControls = () => {
     if (!hasUnsavedChanges) return null;
-  
+
     return (
       <div className="fixed bottom-6 right-6 flex gap-2 items-center bg-background/80 backdrop-blur-sm p-4 rounded-lg border shadow-lg">
         <span className="text-sm text-muted-foreground mr-2">
@@ -201,42 +202,41 @@ const AdminPanel = () => {
           Revert
         </Button>
         <Button 
-  size="sm"
-  onClick={handleSave}
-  disabled={isSaving}
-  className="gap-2"
->
-  {isSaving ? (
-    <>
-      <Loader className="h-4 w-4 animate-spin" />
-      Saving...
-    </>
-  ) : (
-    <>
-      <Save className="h-4 w-4" />
-      Save Changes
-    </>
-  )}
-</Button>
+          size="sm"
+          onClick={handleSave}
+          disabled={isSaving}
+          className="gap-2"
+        >
+          {isSaving ? (
+            <>
+              <Loader className="h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4" />
+              Save Changes
+            </>
+          )}
+        </Button>
       </div>
     );
   };
 
   return (
     <div className="container mx-auto p-4">
-    <div className="flex items-center justify-between mb-6">
-      <div className="flex items-center gap-2">
-        <h1 className="text-2xl font-bold">Timetable Control Panel</h1>
-        <ThemeToggle />
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold">Timetable Control Panel</h1>
+          <ThemeToggle />
+        </div>
+        <Button variant="outline" onClick={() => window.location.href = '/'}>View Timetable</Button>
       </div>
-      <Button variant="outline" onClick={() => window.location.href = '/'}>
-        View Timetable
-      </Button>
-    </div>
+
       {Object.entries(timetableData).map(([day, classes]) => (
-        <Card key={day} className="mb-6">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>{day}</CardTitle>
+  <Card key={day} className="mb-6">
+    <CardHeader className="flex flex-row items-center justify-between">
+      <CardTitle>{day}</CardTitle>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -255,12 +255,9 @@ const AdminPanel = () => {
             </Dialog>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4">
-              {classes.map((cls) => (
-                <div
-                  key={cls.id}
-                  className="flex items-center justify-between p-4 rounded-lg border"
-                >
+          <div className="grid gap-4">
+        {classes.map((cls) => (
+          <div key={cls.id} className="flex items-center justify-between p-4 rounded-lg border">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-semibold">{cls.module}</span>
@@ -277,13 +274,11 @@ const AdminPanel = () => {
                       </span>
                     </div>
                     <div className="text-sm text-gray-600 dark:text-gray-300">
-                      {cls.startTime} - {cls.endTime} | {cls.lecturer} | Room{" "}
-                      {cls.room}
+                      {cls.startTime} - {cls.endTime} | {cls.lecturer} | Room {cls.room}
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    
-                    <Dialog open={open} onOpenChange={setOpen}>
+                    <Dialog open={editingClass === cls.id} onOpenChange={(open) => { if (!open) setEditingClass(null); }}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
@@ -291,13 +286,11 @@ const AdminPanel = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DialogTrigger asChild>
-                            <DropdownMenuItem
-                              onSelect={(e) => e.preventDefault()}
-                            >
-                              Edit
-                            </DropdownMenuItem>
-                          </DialogTrigger>
+                          <DropdownMenuItem
+                            onClick={() => setEditingClass(cls.id)} // Set the class being edited
+                          >
+                            Edit
+                          </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-red-600 dark:text-red-400"
                             onClick={() => handleDeleteClass(day, cls.id)}
@@ -306,6 +299,7 @@ const AdminPanel = () => {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+
                       <DialogContent>
                         <DialogHeader>
                           <DialogTitle>Edit Class</DialogTitle>
@@ -314,20 +308,17 @@ const AdminPanel = () => {
                           initialData={cls}
                           onSubmit={(data) => {
                             handleEditClass(day, cls.id, data);
-                            setOpen(false);
+                            setEditingClass(null); // Close the dialog after editing
                           }}
-                          dialogClose={() => setOpen(false)}
+                          dialogClose={() => setEditingClass(null)} // Close the dialog if canceled
                         />
                       </DialogContent>
                     </Dialog>
                     <Button
-                      variant={
-                        cls.status === "cancelled" ? "destructive" : "outline"
-                      }
+                      variant={cls.status === "cancelled" ? "destructive" : "outline"}
                       size="sm"
                       onClick={() => {
-                        const newStatus =
-                          cls.status === "cancelled" ? undefined : "cancelled";
+                        const newStatus = cls.status === "cancelled" ? undefined : "cancelled";
                         updateClassStatus(day, cls.id, newStatus);
                       }}
                     >
@@ -341,11 +332,9 @@ const AdminPanel = () => {
         </Card>
       ))}
       <FloatingControls />
-          <Toaster />
+      <Toaster />
     </div>
   );
-
-
 };
 
 export default AdminPanel;
