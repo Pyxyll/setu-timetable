@@ -175,7 +175,7 @@ const initialTimetableData = {
 
   const TimetableContext = createContext();
 
-  export function TimetableProvider({ children }) {
+export function TimetableProvider({ children }) {
     const [timetableData, setTimetableData] = useState(initialTimetableData);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -226,13 +226,63 @@ const initialTimetableData = {
             setTimetableData(timetableData);
         }
     };
-  
+
+
     if (isLoading) {
         return <Loader />;
     }
 
+    const addClass = async (day, newClass) => {
+        const newData = {
+            ...timetableData,
+            [day]: [...timetableData[day], newClass]
+        };
+        setTimetableData(newData);
+        await saveData(newData);
+    };
+
+    const editClass = async (day, classId, updatedClass) => {
+        const newData = {
+            ...timetableData,
+            [day]: timetableData[day].map(cls => 
+                cls.id === classId ? { ...updatedClass, id: classId } : cls
+            )
+        };
+        setTimetableData(newData);
+        await saveData(newData);
+    };
+
+    const deleteClass = async (day, classId) => {
+        const newData = {
+            ...timetableData,
+            [day]: timetableData[day].filter(cls => cls.id !== classId)
+        };
+        setTimetableData(newData);
+        await saveData(newData);
+    };
+
+    const saveData = async (data) => {
+        try {
+            await fetch('/api/timetable', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+        } catch (error) {
+            console.error('Failed to save timetable data:', error);
+        }
+    };
+
     return (
-        <TimetableContext.Provider value={{ timetableData, updateClassStatus }}>
+        <TimetableContext.Provider value={{ 
+            timetableData, 
+            updateClassStatus, 
+            addClass, 
+            editClass, 
+            deleteClass 
+        }}>
             {children}
         </TimetableContext.Provider>
     );
