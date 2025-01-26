@@ -175,8 +175,9 @@ const initialTimetableData = {
 
   const TimetableContext = createContext();
 
-export function TimetableProvider({ children }) {
+  export function TimetableProvider({ children }) {
     const [timetableData, setTimetableData] = useState(initialTimetableData);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
     // Load initial data
@@ -198,82 +199,63 @@ export function TimetableProvider({ children }) {
         loadData();
     }, []);
 
-    const updateClassStatus = async (day, classId, newStatus) => {
-        // Update local state
-        const newData = {
-            ...timetableData,
-            [day]: timetableData[day].map(cls => 
+    const updateClassStatus = (day, classId, newStatus) => {
+        setTimetableData(prev => ({
+            ...prev,
+            [day]: prev[day].map(cls => 
                 cls.id === classId 
                     ? { ...cls, status: newStatus }
                     : cls
             )
-        };
-        
-        setTimetableData(newData);
+        }));
+        setHasUnsavedChanges(true);
+    };
 
-        // Persist to Vercel Blob
+    const addClass = (day, newClass) => {
+        setTimetableData(prev => ({
+            ...prev,
+            [day]: [...prev[day], newClass]
+        }));
+        setHasUnsavedChanges(true);
+    };
+
+    const editClass = (day, classId, updatedClass) => {
+        setTimetableData(prev => ({
+            ...prev,
+            [day]: prev[day].map(cls => 
+                cls.id === classId ? { ...updatedClass, id: classId } : cls
+            )
+        }));
+        setHasUnsavedChanges(true);
+    };
+
+    const deleteClass = (day, classId) => {
+        setTimetableData(prev => ({
+            ...prev,
+            [day]: prev[day].filter(cls => cls.id !== classId)
+        }));
+        setHasUnsavedChanges(true);
+    };
+
+    const saveChanges = async () => {
         try {
             await fetch('/api/timetable', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(newData)
+                body: JSON.stringify(timetableData)
             });
+            setHasUnsavedChanges(false);
         } catch (error) {
             console.error('Failed to save timetable data:', error);
-            // Optionally revert the local state if save fails
-            setTimetableData(timetableData);
+            throw error; // Re-throw to handle in the UI
         }
     };
-
 
     if (isLoading) {
         return <Loader />;
     }
-
-    const addClass = async (day, newClass) => {
-        const newData = {
-            ...timetableData,
-            [day]: [...timetableData[day], newClass]
-        };
-        setTimetableData(newData);
-        await saveData(newData);
-    };
-
-    const editClass = async (day, classId, updatedClass) => {
-        const newData = {
-            ...timetableData,
-            [day]: timetableData[day].map(cls => 
-                cls.id === classId ? { ...updatedClass, id: classId } : cls
-            )
-        };
-        setTimetableData(newData);
-        await saveData(newData);
-    };
-
-    const deleteClass = async (day, classId) => {
-        const newData = {
-            ...timetableData,
-            [day]: timetableData[day].filter(cls => cls.id !== classId)
-        };
-        setTimetableData(newData);
-        await saveData(newData);
-    };
-
-    const saveData = async (data) => {
-        try {
-            await fetch('/api/timetable', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data)
-            });
-        } catch (error) {
-            console.error('Failed to save timetable data:', error);
-        }
-    };
 
     return (
         <TimetableContext.Provider value={{ 
@@ -281,7 +263,9 @@ export function TimetableProvider({ children }) {
             updateClassStatus, 
             addClass, 
             editClass, 
-            deleteClass 
+            deleteClass,
+            saveChanges,
+            hasUnsavedChanges
         }}>
             {children}
         </TimetableContext.Provider>

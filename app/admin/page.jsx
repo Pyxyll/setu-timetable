@@ -27,7 +27,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, Loader, Save, RotateCcw } from "lucide-react";
+import { Toaster } from "@/components/ui/toaster";
+import { useToast } from "@/hooks/use-toast"
+
 
 const ClassForm = ({ initialData, onSubmit, dialogClose }) => {
   const [formData, setFormData] = useState(
@@ -50,22 +53,22 @@ const ClassForm = ({ initialData, onSubmit, dialogClose }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-<div className="grid grid-cols-2 gap-4">
-  <div>
-    <Label htmlFor="startTime">Start Time</Label>
-    <TimePicker
-      value={formData.startTime}
-      onChange={(time) => setFormData({ ...formData, startTime: time })}
-    />
-  </div>
-  <div>
-    <Label htmlFor="endTime">End Time</Label>
-    <TimePicker
-      value={formData.endTime}
-      onChange={(time) => setFormData({ ...formData, endTime: time })}
-    />
-  </div>
-</div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="startTime">Start Time</Label>
+          <TimePicker
+            value={formData.startTime}
+            onChange={(time) => setFormData({ ...formData, startTime: time })}
+          />
+        </div>
+        <div>
+          <Label htmlFor="endTime">End Time</Label>
+          <TimePicker
+            value={formData.endTime}
+            onChange={(time) => setFormData({ ...formData, endTime: time })}
+          />
+        </div>
+      </div>
 
       <div>
         <Label htmlFor="module">Module Name</Label>
@@ -132,15 +135,21 @@ const ClassForm = ({ initialData, onSubmit, dialogClose }) => {
 };
 
 const AdminPanel = () => {
-  const { timetableData, updateClassStatus, addClass, editClass, deleteClass } =
-    useTimetable();
+  const { 
+    timetableData, 
+    updateClassStatus, 
+    addClass, 
+    editClass, 
+    deleteClass,
+    saveChanges,
+    hasUnsavedChanges 
+  } = useTimetable();
+  const [open, setOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-
+  const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
   const handleAddClass = (day, classData) => {
-    const id = `${day}_${classData.startTime.replace(
-      ":",
-      ""
-    )}_${classData.module.replace(/\s+/g, "")}`;
+    const id = `${day}_${classData.startTime.replace(':', '')}_${classData.module.replace(/\s+/g, '')}`;
     addClass(day, { ...classData, id });
   };
 
@@ -148,26 +157,82 @@ const AdminPanel = () => {
     editClass(day, id, classData);
   };
 
-  const [open, setOpen] = useState(false);
-
   const handleDeleteClass = (day, id) => {
-    if (window.confirm("Are you sure you want to delete this class?")) {
+    if (window.confirm('Are you sure you want to delete this class?')) {
       deleteClass(day, id);
     }
   };
 
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await saveChanges();
+      toast({
+        title: "Changes saved successfully",
+        duration: 2000
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to save changes",
+        description: "Please try again",
+        variant: "destructive",
+        duration: 3000
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const FloatingControls = () => {
+    if (!hasUnsavedChanges) return null;
+  
+    return (
+      <div className="fixed bottom-6 right-6 flex gap-2 items-center bg-background/80 backdrop-blur-sm p-4 rounded-lg border shadow-lg">
+        <span className="text-sm text-muted-foreground mr-2">
+          You have unsaved changes
+        </span>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => window.location.reload()} // Simple reload for now - we can make this more sophisticated
+          className="gap-2"
+        >
+          <RotateCcw className="h-4 w-4" />
+          Revert
+        </Button>
+        <Button 
+  size="sm"
+  onClick={handleSave}
+  disabled={isSaving}
+  className="gap-2"
+>
+  {isSaving ? (
+    <>
+      <Loader className="h-4 w-4 animate-spin" />
+      Saving...
+    </>
+  ) : (
+    <>
+      <Save className="h-4 w-4" />
+      Save Changes
+    </>
+  )}
+</Button>
+      </div>
+    );
+  };
+
   return (
     <div className="container mx-auto p-4">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold">Timetable Control Panel</h1>
-          <ThemeToggle />
-        </div>
-        <Button variant="outline" onClick={() => (window.location.href = "/")}>
-          View Timetable
-        </Button>
+    <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center gap-2">
+        <h1 className="text-2xl font-bold">Timetable Control Panel</h1>
+        <ThemeToggle />
       </div>
-
+      <Button variant="outline" onClick={() => window.location.href = '/'}>
+        View Timetable
+      </Button>
+    </div>
       {Object.entries(timetableData).map(([day, classes]) => (
         <Card key={day} className="mb-6">
           <CardHeader className="flex flex-row items-center justify-between">
@@ -217,6 +282,7 @@ const AdminPanel = () => {
                     </div>
                   </div>
                   <div className="flex gap-2">
+                    
                     <Dialog open={open} onOpenChange={setOpen}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -274,17 +340,20 @@ const AdminPanel = () => {
           </CardContent>
         </Card>
       ))}
+      <FloatingControls />
+          <Toaster />
     </div>
   );
+
+
 };
 
 export default AdminPanel;
 
-
 const TimePicker = ({ value, onChange }) => {
   const times = Array.from({ length: 9 }, (_, i) => {
     const hour = i + 9; // 9AM to 5PM
-    return `${hour.toString().padStart(2, '0')}:15`;
+    return `${hour.toString().padStart(2, "0")}:15`;
   });
 
   return (
